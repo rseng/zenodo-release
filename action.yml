@@ -43,6 +43,10 @@ runs:
   using: "composite"
   steps:
 
+    - name: Install Dependencies
+      run: pip install requests
+      shell: bash
+
     - name: Deploy Zenodo
       id: deploy
       env:
@@ -50,7 +54,5 @@ runs:
         archive: ${{ inputs.archive }}
         version: ${{ inputs.version }}
         ACTION_PATH: ${{ github.action_path }}
-      run: |
-        pip install requests
-        ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}
+      run: ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}
       shell: python
