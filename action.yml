@@ -1,0 +1,29 @@
+name: "Zenodo Release Action"
+description: "Release zenodo metadata so you don't have to give admin hook access"
+inputs:
+  archive:
+    description: the path to the release archive
+    required: true
+  version:
+    description: the release version
+    required: true
+  zenodo_json:
+    description: Path to zenodo.json to upload with metadata (must exist)
+
+#outputs:
+#  matrix:
+#   description: matrix of spliced builds
+#    value: ${{ steps.matrix.outputs.matrix }}
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Deploy Zenodo
+      env:
+        zenodo_json: ${{ inputs.zenodo_json }}
+        archive: ${{ inputs.archive }}
+        version: ${{ inputs.version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: ${{ github.action_path }}/scripts/deploy.py ${zenodo_json} ${archive} --version ${version}
+      shell: python
