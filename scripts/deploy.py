@@ -50,7 +50,7 @@ def upload_archive(archive, zenodo_json, version):
         json={},
         headers=headers,
     )
-    if response.status_code != 200:
+    if response.status_code not in [200, 201]:
         sys.exit(
             "Trouble requesting new upload: %s, %s"
             % (response.status_code, response.json())
