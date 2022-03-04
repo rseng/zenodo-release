@@ -6,6 +6,70 @@ on release, and without needing to enable admin webhooks. To get this working yo
 1. Create an account on Zenodo
 2. Under your name -> Applications -> Developer Applications -> Personal Access Tokens -> +New Token and choose both scopes for deposit
 3. Add the token to your repository secrets as `ZENODO_TOKEN`
+4. Create a .zenodo.json file for the root of your repository (see [template](.zenodo.json))
+5. Add the example action (modified for your release) to your GitHub repository.
+ 
+**Important** You CANNOT create a release online first and then try to upload to the same DOI.
+If you do this, you'll get:
 
-**todo** under development!
+```python
+{'status': 400,
+ 'message': 'Validation error.',
+ 'errors': [{'field': 'metadata.doi',
+   'message': 'The prefix 10.5281 is administrated locally.'}]}
+```
+
+I think this is kind of silly, but that's just me.
+
+## Usage
+
+### GitHub Action
+
+After you complete the steps above to create the metadata file, you might create a release
+action as follows:
+
+```yaml
+name: Zenodo Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: download archive to runner
+      env:
+        tarball: ${{ github.event.release.tarball_url }}
+      run: |
+        name=$(basename ${tarball})        
+        curl -L $tarball > $name
+        echo "archive=${name}" >> $GITHUB_ENV
+
+    - name: Run Zenodo Deploy
+      with:
+        version: ${{ github.event.release.tag_name }}
+        zenodo_json: .zenodo.json
+        archive: ${{ env.archive }}
+```
+
+Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`)
+and using the default zenodo.json that is obtained from the checked out repository.
+We also grab the version as the release tag. We are also running on the publication of a release.
+
+### Local
+
+If you want to use the script locally (meaning to manually push a release) you can wget
+or download the release (usually .tar.gz or .zip) and then export your zenodo token and do
+the following:
+
+```bash
+export ZENODO_TOKEN=xxxxxxxxxxxxxxxxxxxx
+
+                                  # archive    # identifier   # version
+$ python scripts/deploy.py upload 0.0.0.tar.gz 6326700        --version 0.0.0
+```
 

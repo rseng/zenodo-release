@@ -11,5 +11,7 @@
        "affiliation": "Ohio SuperComputer Center",
        "name": "Jeff Ohrstrom"
      }
-  ]
+  ],
+  "keywords": ["zenodo", "release", "archive"],
+  "license": "MIT"
 }

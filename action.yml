@@ -10,20 +10,47 @@ inputs:
   zenodo_json:
     description: Path to zenodo.json to upload with metadata (must exist)
 
-#outputs:
-#  matrix:
-#   description: matrix of spliced builds
-#    value: ${{ steps.matrix.outputs.matrix }}
+outputs:
+  badge:
+    description: badge url
+    value: ${{ steps.deploy.outputs.badge }}
+  bucket:
+    description: bucket url
+    value: ${{ steps.deploy.outputs.bucket }}
+  conceptbadge:
+    description: concept badge url
+    value: ${{ steps.deploy.outputs.conceptbadge }}
+  conceptdoi:
+    description: concept doi url
+    value: ${{ steps.deploy.outputs.conceptdoi }}
+  doi:
+    description: doi url
+    value: ${{ steps.deploy.outputs.doi }}
+  latest:
+    description: latest url
+    value: ${{ steps.deploy.outputs.latest }}
+  latest_html:
+    description: latest html url
+    value: ${{ steps.deploy.outputs.latest_html }}
+  record:
+    description: record url
+    value: ${{ steps.deploy.outputs.record }}
+  record_html:
+    description: record html url
+    value: ${{ steps.deploy.outputs.record_html }}
 
 runs:
   using: "composite"
   steps:
 
     - name: Deploy Zenodo
+      id: deploy
       env:
         zenodo_json: ${{ inputs.zenodo_json }}
         archive: ${{ inputs.archive }}
         version: ${{ inputs.version }}
         ACTION_PATH: ${{ github.action_path }}
-      run: ${{ github.action_path }}/scripts/deploy.py ${zenodo_json} ${archive} --version ${version}
+      run: |
+        pip install requests
+        ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}
       shell: python
