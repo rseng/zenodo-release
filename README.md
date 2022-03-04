@@ -52,6 +52,7 @@ jobs:
     - name: Run Zenodo Deploy
       uses: rseng/zenodo-release@main
       with:
+        token: ${{ secrets.ZENODO_TOKEN }}
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
@@ -67,6 +68,7 @@ If you want to see or do something with the outputs, add an `id` to the deploy s
       id: deploy
       uses: rseng/zenodo-release@main
       with:
+        token: ${{ secrets.ZENODO_TOKEN }}
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}

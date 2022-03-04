@@ -27,6 +27,7 @@ jobs:
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
+        token: ${{ secrets.ZENODO_TOKEN }}
 
     - name: View Outputs
       env:
