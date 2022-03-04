@@ -54,5 +54,6 @@ runs:
         version: ${{ inputs.version }}
         ACTION_PATH: ${{ github.action_path }}
         ZENODO_TOKEN: ${{ inputs.token }}
-      run: python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}
+        doi: ${{ inputs.doi }}
+      run: python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version} --doi ${doi}
       shell: bash

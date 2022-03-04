@@ -32,7 +32,7 @@ if not ZENODO_TOKEN:
     sys.exit("A ZENODO_TOKEN is required to be exported in the environment!")
 
 
-def upload_archive(archive, zenodo_json, version):
+def upload_archive(archive, zenodo_json, version, doi=None):
     """
     Upload an archive to zenodo
     """
@@ -43,18 +43,65 @@ def upload_archive(archive, zenodo_json, version):
     headers = {"Accept": "application/json"}
     params = {"access_token": ZENODO_TOKEN}
 
-    # Create an empty upload
-    response = requests.post(
-        "https://zenodo.org/api/deposit/depositions",
-        params=params,
-        json={},
-        headers=headers,
-    )
-    if response.status_code not in [200, 201]:
-        sys.exit(
-            "Trouble requesting new upload: %s, %s"
-            % (response.status_code, response.json())
+    if doi:
+        depositions = requests.get(
+            "https://zenodo.org/api/deposit/depositions",
+            params=params,
+            headers=headers,
         )
+        if depositions.status_code not in [200, 201]:
+            sys.exit("Cannot query depositions: %s, %s" % (depositions.status_code, depositions.json()))
+
+        target_deposit = None
+        for deposit in depositions.json():
+            if deposit['doi'] == doi:
+                target_deposit = deposit
+
+        if not target_deposit:
+            sys.exit("Cannot find deposit with doi: '%s'. Are you currently editing it?" % (doi))
+
+        # found the existing deposit - so let's make a new version and clean it up.
+        url = "%s/actions/newversion" % target_deposit['links']['self']
+        new_version = requests.post(
+            url,
+            params=params,
+            headers=headers,
+        )
+        if new_version.status_code not in [200, 201]:
+            sys.exit("Cannot create a new version for doi '%s'. %s" % (doi, new_version.json()))
+
+        # new_version is actually the next draft. cannot edit the existing doi above
+        new_version = requests.get(
+            new_version.json()['links']['latest_draft'],
+            params=params,
+            headers=headers,
+        )
+        if new_version.status_code not in [200, 201]:
+            sys.exit("Cannot create a new version for doi '%s'. %s" % (doi, new_version.json()))
+
+        for file in new_version.json()['files']:
+            delete = requests.delete(
+                file['links']['self'],
+                params=params,
+                headers=headers,
+            )
+            if delete.status_code not in [200, 204]:
+                print("could not delete file %s: %s" % (file['filename'], delete.json()))
+
+        response = new_version
+    else:
+        # Create an empty upload
+        response = requests.post(
+            "https://zenodo.org/api/deposit/depositions",
+            params=params,
+            json={},
+            headers=headers,
+        )
+        if response.status_code not in [200, 201]:
+            sys.exit(
+                "Trouble requesting new upload: %s, %s"
+                % (response.status_code, response.json())
+            )
 
     upload = response.json()
 
@@ -121,6 +168,7 @@ def get_parser():
         default=".zenodo.json",
     )
     upload.add_argument("--version", help="version to upload")
+    upload.add_argument("--doi", help="an existing DOI to add a new version to")
     return parser
 
 
@@ -147,7 +195,7 @@ def main():
 
     # Prepare drafts
     if args.command == "upload":
-        upload_archive(args.archive, args.zenodo_json, args.version)
+        upload_archive(args.archive, args.zenodo_json, args.version, doi=args.doi)
 
 
 if __name__ == "__main__":
