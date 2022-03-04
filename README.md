@@ -8,6 +8,20 @@ on release, and without needing to enable admin webhooks. To get this working yo
 3. Add the token to your repository secrets as `ZENODO_TOKEN`
 4. Create a .zenodo.json file for the root of your repository (see [template](.zenodo.json))
 5. Add the example action (modified for your release) to your GitHub repository.
+
+[Here is an example](https://zenodo.org/record/6326823) of a release created by this action, and the metadata associated:
+
+```
+doi https://doi.org/10.5281/zenodo.6326823
+conceptdoi https://doi.org/10.5281/zenodo.6326822
+conceptbadge https://zenodo.org/badge/doi/10.5281/zenodo.6326822.svg
+badge https://zenodo.org/badge/doi/10.5281/zenodo.6326823.svg
+bucket https://zenodo.org/api/files/dbcddadd-4ea9-4f66-8045-e15552399dbc
+latest https://zenodo.org/api/records/6326823
+latest html https://zenodo.org/record/6326823
+record https://zenodo.org/api/records/6326823
+record html https://zenodo.org/record/6326823
+```
  
 **Important** You CANNOT create a release online first and then try to upload to the same DOI.
 If you do this, you'll get:
