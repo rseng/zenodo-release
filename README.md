@@ -50,6 +50,7 @@ jobs:
         echo "archive=${name}" >> $GITHUB_ENV
 
     - name: Run Zenodo Deploy
+      uses: rseng/zenodo-release@main
       with:
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
@@ -64,6 +65,7 @@ If you want to see or do something with the outputs, add an `id` to the deploy s
 ```yaml
     - name: Run Zenodo Deploy
       id: deploy
+      uses: rseng/zenodo-release@main
       with:
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json

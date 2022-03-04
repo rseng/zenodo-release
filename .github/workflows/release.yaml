@@ -21,6 +21,7 @@ jobs:
         echo "archive=${name}" >> $GITHUB_ENV
 
     - name: Run Zenodo Deploy
+      uses: ./
       id: deploy
       with:
         version: ${{ github.event.release.tag_name }}
