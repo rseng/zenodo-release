@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-
     - uses: actions/checkout@v3
     - name: download archive to runner
       env:
@@ -22,7 +21,31 @@ jobs:
         echo "archive=${name}" >> $GITHUB_ENV
 
     - name: Run Zenodo Deploy
+      id: deploy
       with:
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
+
+    - name: View Outputs
+      env:
+        doi: ${{ steps.deploy.outputs.doi }} 
+        conceptdoi: ${{ steps.deploy.outputs.conceptdoi }} 
+        conceptbadge: ${{ steps.deploy.outputs.conceptbadge }}
+        badge: ${{ steps.deploy.outputs.badge }} 
+        bucket: ${{ steps.deploy.outputs.bucket }} 
+        latest: ${{ steps.deploy.outputs.latest }} 
+        latest_html: ${{ steps.deploy.outputs.latest_html }} 
+        record: ${{ steps.deploy.outputs.record }} 
+        record_html: ${{ steps.deploy.outputs.record_html }} 
+      run: |
+        echo "doi ${doi}"
+        echo "conceptdoi ${conceptdoi}"
+        echo "conceptbadge ${conceptbadge}"
+        echo "badge ${badge}"
+        echo "bucket ${bucket}"
+        echo "latest ${latest}"
+        echo "latest html ${latest_html}"
+        echo "record ${record}"
+        echo "record html ${record_html}"
+

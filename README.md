@@ -59,6 +59,38 @@ jobs:
 Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`)
 and using the default zenodo.json that is obtained from the checked out repository.
 We also grab the version as the release tag. We are also running on the publication of a release.
+If you want to see or do something with the outputs, add an `id` to the deploy step and do:
+
+```yaml
+    - name: Run Zenodo Deploy
+      id: deploy
+      with:
+        version: ${{ github.event.release.tag_name }}
+        zenodo_json: .zenodo.json
+        archive: ${{ env.archive }}
+
+    - name: View Outputs
+      env:
+        doi: ${{ steps.deploy.outputs.doi }} 
+        conceptdoi: ${{ steps.deploy.outputs.conceptdoi }} 
+        conceptbadge: ${{ steps.deploy.outputs.conceptbadge }} 
+        badge: ${{ steps.deploy.outputs.badge }} 
+        bucket: ${{ steps.deploy.outputs.bucket }} 
+        latest: ${{ steps.deploy.outputs.latest }} 
+        latest_html: ${{ steps.deploy.outputs.latest_html }} 
+        record: ${{ steps.deploy.outputs.record }} 
+        record_html: ${{ steps.deploy.outputs.record_html }} 
+      run: |
+        echo "doi ${doi}"
+        echo "conceptdoi ${conceptdoi}"
+        echo "conceptbadge ${conceptbadge}"
+        echo "badge ${badge}"
+        echo "bucket ${bucket}"
+        echo "latest ${latest}"
+        echo "latest html ${latest_html}"
+        echo "record ${record}"
+        echo "record html ${record_html}"
+```
 
 ### Local
 
