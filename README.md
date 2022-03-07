@@ -45,7 +45,7 @@ If, however, you'd like to make new versions you can specify the doi that repres
 versions. In this image you would specify `10.5281/zenodo.6326822`.  This action will then
 create new versions tied to this DOI.
 
-![Zenodo Versions](img/zenodo_versions.png)
+![Zenodo card for versions. '0.0.15' is the only version and a DOI of 10.5281/zenodo.6326823. The footer of the card has a site all versions with DOI 10.5281/zenodo.6326822](img/zenodo_versions.png)
 
 ### GitHub Action
 
