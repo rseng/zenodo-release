@@ -38,8 +38,8 @@ I think this is kind of silly, but that's just me.
 ## Usage
 
 This action runs in 2 variants. By default it'll create a unique DOI every single time.
-However, If you specify `doi` in the action, it will create *new versions* of that existing
-DOI.  These are essentially new DOIs, but they're associated in Zenodo with this base `doi`.
+However, If you specify `doi` that represents all versions, it will create *new versions* of that existing
+DOI.  These are essentially new DOIs, but they're associated in Zenodo with the `doi` for *all* versions.
 
 ### GitHub Action
 
