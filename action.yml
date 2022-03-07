@@ -12,6 +12,8 @@ inputs:
     required: true
   zenodo_json:
     description: Path to zenodo.json to upload with metadata (must exist)
+  doi:
+    descripton: The DOI to create a new version from
 
 outputs:
   badge:
