@@ -60,7 +60,7 @@ def upload_archive(archive, zenodo_json, version, doi=None):
         if not target_deposit:
             sys.exit("Cannot find deposit with doi: '%s'. Are you currently editing it?" % (doi))
 
-        # found the existing deposit - so let's make a new version and clean it up.
+        # found the existing deposit - so let's make a new version.
         url = "%s/actions/newversion" % target_deposit['links']['self']
         new_version = requests.post(
             url,
@@ -79,6 +79,8 @@ def upload_archive(archive, zenodo_json, version, doi=None):
         if new_version.status_code not in [200, 201]:
             sys.exit("Cannot create a new version for doi '%s'. %s" % (doi, new_version.json()))
 
+        # this draft is based off of version N-1, so let's remove N-1's artifacts to make room
+        # for version N.
         for file in new_version.json()['files']:
             delete = requests.delete(
                 file['links']['self'],

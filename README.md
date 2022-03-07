@@ -37,6 +37,10 @@ I think this is kind of silly, but that's just me.
 
 ## Usage
 
+This action runs in 2 variants. By default it'll create a unique DOI every single time.
+However, If you specify `doi` in the action, it will create *new versions* of that existing
+DOI.  These are essentially new DOIs, but they're associated in Zenodo with this base `doi`.
+
 ### GitHub Action
 
 After you complete the steps above to create the metadata file, you might create a release
@@ -70,6 +74,14 @@ jobs:
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
+
+        # Optional DOI to create a new version from. Leaving this blank (the default) will create
+        # a new DOI on every release. Use this if you have an existing DOI to use
+        # as a base and this action will create new versions of it.
+        #
+        # Newer versions have their own DOIs, but they're also linked to this DOI
+        # as a different version.
+        doi: '10.5281/zenodo.6326823'
 ```
 
 Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`)
