@@ -37,9 +37,15 @@ I think this is kind of silly, but that's just me.
 
 ## Usage
 
-This action runs in 2 variants. By default it'll create a unique DOI every single time.
-However, If you specify `doi` that represents all versions, it will create *new versions* of that existing
-DOI.  These are essentially new DOIs, but they're associated in Zenodo with the `doi` for *all* versions.
+When looking at artifacts in Zenodo you'll see a versions card like the image below.  This artifact has
+only one version, 0.0.15. By default, this is the behavior of this action - to create brand new artifacts
+with only one version.
+
+If, however, you'd like to make new versions you can specify the doi that represents *all*
+versions. In this image you would specify `10.5281/zenodo.6326822`.  This action will then
+create new versions tied to this DOI.
+
+![Zenodo Versions](img/zenodo_versions.png)
 
 ### GitHub Action
 
@@ -81,7 +87,7 @@ jobs:
         #
         # Newer versions have their own DOIs, but they're also linked to this DOI
         # as a different version. When using this, use the DOI for all versions.
-        doi: '10.5281/zenodo.6326823'
+        doi: '10.5281/zenodo.6326822'
 ```
 
 Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`)
