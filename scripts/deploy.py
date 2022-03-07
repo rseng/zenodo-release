@@ -55,7 +55,7 @@ def upload_archive(archive, zenodo_json, version, doi=None):
         target_deposit = None
         for deposit in depositions.json():
             print("looking at deposit %s" % (deposit['doi']))
-            if deposit['doi'] == doi:
+            if deposit['conceptdoi'] == doi:
                 target_deposit = deposit
 
         if not target_deposit:

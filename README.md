@@ -75,12 +75,12 @@ jobs:
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
 
-        # Optional DOI to create a new version from. Leaving this blank (the default) will create
-        # a new DOI on every release. Use this if you have an existing DOI to use
-        # as a base and this action will create new versions of it.
+        # Optional DOI for all versions. Leaving this blank (the default) will create
+        # a new DOI on every release. Use a DOI that represents all versions will
+        # create a new version for this existing DOI.
         #
         # Newer versions have their own DOIs, but they're also linked to this DOI
-        # as a different version.
+        # as a different version. When using this, use the DOI for all versions.
         doi: '10.5281/zenodo.6326823'
 ```
 
