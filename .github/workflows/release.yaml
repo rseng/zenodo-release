@@ -28,6 +28,7 @@ jobs:
         zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
         token: ${{ secrets.ZENODO_TOKEN }}
+        doi: 10.5281/zenodo.6326822
 
     - name: View Outputs
       env:
@@ -50,4 +51,3 @@ jobs:
         echo "latest html ${latest_html}"
         echo "record ${record}"
         echo "record html ${record_html}"
-
