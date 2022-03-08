@@ -103,9 +103,9 @@ class Zenodo:
         """
         response = requests.post(
             "https://zenodo.org/api/deposit/depositions",
-            params=params,
+            params=self.params,
             json={},
-            headers=headers,
+            headers=self.headers,
         )
         if response.status_code not in [200, 201]:
             sys.exit(
