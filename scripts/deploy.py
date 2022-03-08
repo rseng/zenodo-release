@@ -37,12 +37,12 @@ class Zenodo:
     Zenodo client to handle shared API calls.
     """
 
-    def __init__(self, sandbox=True):
+    def __init__(self, sandbox=False):
         self.headers = {"Accept": "application/json"}
         self.params = {"access_token": ZENODO_TOKEN}
         self.set_host(sandbox)
 
-    def set_host(self, sandbox=True):
+    def set_host(self, sandbox=False):
         """
         Given a preference for sandbox (or not) set the API host
         """
