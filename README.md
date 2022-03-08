@@ -9,7 +9,7 @@ on release, and without needing to enable admin webhooks. To get this working yo
 4. Create a .zenodo.json file for the root of your repository (see [template](.zenodo.json))
 5. Add the example action (modified for your release) to your GitHub repository.
 
-[Here is an example](https://zenodo.org/record/6326823) of a release created by this action, and the metadata associated:
+[Here is an example](https://doi.org/10.5281/zenodo.6326822) of an "all releases" DOI created by this action, and the metadata associated:
 
 ```
 doi https://doi.org/10.5281/zenodo.6326823
@@ -23,6 +23,9 @@ record https://zenodo.org/api/records/6326823
 record html https://zenodo.org/record/6326823
 ```
  
+You'll notice for this release there are several associated DOIs, and what this means is that the DOI [https://doi.org/10.5281/zenodo.6326822](https://doi.org/10.5281/zenodo.6326822)
+will always link to the latest, which is typically what we want.
+
 **Important** You CANNOT create a release online first and then try to upload to the same DOI.
 If you do this, you'll get:
 
@@ -33,7 +36,10 @@ If you do this, you'll get:
    'message': 'The prefix 10.5281 is administrated locally.'}]}
 ```
 
-I think this is kind of silly, but that's just me.
+I think this is kind of silly, but that's just me. So the way to go is likely to:
+
+1. Create a new DOI on the first go when you don't have one
+2. Add the "all releases" DOI to your action to update that one for all releases after that!
 
 ## Usage
 
