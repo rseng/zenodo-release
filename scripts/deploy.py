@@ -269,7 +269,6 @@ def get_parser():
         "--zenodo-json",
         dest="zenodo_json",
         help="path to .zenodo.json (defaults to .zenodo.json)",
-        default=".zenodo.json",
     )
     upload.add_argument("--version", help="version to upload")
     upload.add_argument("--doi", help="an existing DOI to add a new version to")
@@ -288,10 +287,8 @@ def main():
     if not args.command:
         help()
 
-    if not args.zenodo_json or not os.path.exists(args.zenodo_json):
-        sys.exit(
-            "You must provide an existing .zenodo.json as the first positional argument."
-        )
+    if args.zenodo_json and not os.path.exists(args.zenodo_json):
+        sys.exit("%s does not exist." % args.zenodo_json)
     if not args.archive:
         sys.exit("You must provide an archive as the second positional argument.")
     if not args.version:

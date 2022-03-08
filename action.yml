@@ -58,9 +58,12 @@ runs:
         ZENODO_TOKEN: ${{ inputs.token }}
         doi: ${{ inputs.doi }}
       run: |
-        command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}"
+        command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --version ${version}"
         if [[ "${doi}" != "" ]]; then
             command="$command --doi ${doi}"
+        fi
+        if [[ "${zenodo_json}" != "" ]]; then
+            command="$command --zenodo-json ${zenodo_json}"
         fi
         printf "$command\n"
         $command
