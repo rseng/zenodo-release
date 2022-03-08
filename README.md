@@ -49,8 +49,12 @@ create new versions tied to this DOI.
 
 ### GitHub Action
 
-After you complete the steps above to create the metadata file, you might create a release
-action as follows:
+After you complete the steps above to create the metadata file, you have two options.
+
+#### Existing DOI
+
+If you have an existing DOI that is of the **all versions** type meaning we can update it, you should provide it to the action.
+The example below shows running a release workflow and providing an archive to update to a new version (**released under the same DOI**)
 
 ```yaml
 name: Zenodo Release
@@ -78,7 +82,7 @@ jobs:
       with:
         token: ${{ secrets.ZENODO_TOKEN }}
         version: ${{ github.event.release.tag_name }}
-        zenodo_json: .zenodo.json
+        zenodo_json: .zenodo.json   # optional
         archive: ${{ env.archive }}
 
         # Optional DOI for all versions. Leaving this blank (the default) will create
@@ -90,9 +94,61 @@ jobs:
         doi: '10.5281/zenodo.6326822'
 ```
 
-Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`)
-and using the default zenodo.json that is obtained from the checked out repository.
+Notice how we are choosing to use the .tar.gz (you could use the zip too at `${{ github.event.release.zipball_url }}`).
+Note that the "zenodo.json" is optional only if you've already created the record with some metadata. If you provide it,
+it will be used to update metadata found with the previous upload. If you don't provide it, the previous upload will
+only be updated for the date and version. Note that we are considering adding an ability to upload from new authors found
+in the commit history, but this is not implemented yet.
+
+#### New DOI
+
+If you want to be creating fresh DOIs and releases (with no shared DOI for all versions) for each one, just remove the doi variable. Note
+that for this case, the .zenodo.json is required as there isn't a previous record to get it from.
+
+```yaml
+name: Zenodo Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: download archive to runner
+      env:
+        tarball: ${{ github.event.release.tarball_url }}
+      run: |
+        name=$(basename ${tarball})        
+        curl -L $tarball > $name
+        echo "archive=${name}" >> $GITHUB_ENV
+
+    - name: Run Zenodo Deploy
+      uses: rseng/zenodo-release@main
+      with:
+        token: ${{ secrets.ZENODO_TOKEN }}
+        version: ${{ github.event.release.tag_name }}
+        zenodo_json: .zenodo.json  # required
+        archive: ${{ env.archive }}
+```
+
+#### Archives
+
+For both of the above, instead of an exact archive path you can also use a pattern to give to Python's `glob.glob`. E.g.,:
+
+```yaml
+      with:
+        archive: "files/*.tar.gz"
+```
+
+Note that we will be testing support for more than one path or pattern soon.
 We also grab the version as the release tag. We are also running on the publication of a release.
+
+#### Outputs
+
 If you want to see or do something with the outputs, add an `id` to the deploy step and do:
 
 ```yaml
@@ -137,7 +193,7 @@ the following:
 ```bash
 export ZENODO_TOKEN=xxxxxxxxxxxxxxxxxxxx
 
-                                  # archive    # identifier   # version
-$ python scripts/deploy.py upload 0.0.0.tar.gz 6326700        --version 0.0.0
+                                  # archive    # multi-version DOI                 # new version
+$ python scripts/deploy.py upload 0.0.0.tar.gz --doi 10.5281/zenodo.6326822        --version 0.0.0
 ```
 

@@ -10,6 +10,7 @@ import argparse
 import os
 import json
 import sys
+from glob import glob
 from datetime import datetime
 import requests
 
@@ -27,73 +28,79 @@ def read_json(filename):
 
 
 ZENODO_TOKEN = os.environ.get("ZENODO_TOKEN")
-ZENODO_HOST = "zenodo.org"
 if not ZENODO_TOKEN:
     sys.exit("A ZENODO_TOKEN is required to be exported in the environment!")
 
 
-def upload_archive(archive, zenodo_json, version, doi=None):
+class Zenodo:
     """
-    Upload an archive to zenodo
+    Zenodo client to handle shared API calls.
     """
-    archive = os.path.abspath(archive)
-    if not os.path.exists(archive):
-        sys.exit("Archive %s does not exist." % archive)
 
-    headers = {"Accept": "application/json"}
-    params = {"access_token": ZENODO_TOKEN}
+    def __init__(self, sandbox=True):
+        self.headers = {"Accept": "application/json"}
+        self.params = {"access_token": ZENODO_TOKEN}
+        self.set_host(sandbox)
 
-    if doi:
-        depositions = requests.get(
-            "https://zenodo.org/api/deposit/depositions",
-            params=params,
-            headers=headers,
-        )
-        if depositions.status_code not in [200, 201]:
-            sys.exit("Cannot query depositions: %s, %s" % (depositions.status_code, depositions.json()))
+    def set_host(self, sandbox=True):
+        """
+        Given a preference for sandbox (or not) set the API host
+        """
+        self.host = "zenodo.org"
+        if sandbox:
+            self.host = "sandbox.zenodo.org"
 
-        target_deposit = None
-        for deposit in depositions.json():
-            print("looking at deposit %s" % (deposit['doi']))
-            if deposit['conceptdoi'] == doi:
-                target_deposit = deposit
+    def get(self, url):
+        """
+        Wrapper to get to handle adding host and adding params or headers
+        """
+        if not url.startswith("http"):
+            url = "https://%s%s" % (self.host, url)
+        return requests.get(url, params=self.params, headers=self.headers)
 
-        if not target_deposit:
-            sys.exit("Cannot find deposit with doi: '%s'. Are you currently editing it?" % (doi))
+    def post(self, url):
+        """
+        Wrapper to post to handle adding host and adding params or headers
+        """
+        if not url.startswith("http"):
+            url = "https://%s%s" % (self.host, url)
+        return requests.post(url, params=self.params, headers=self.headers)
 
-        # found the existing deposit - so let's make a new version.
-        url = "%s/actions/newversion" % target_deposit['links']['self']
-        new_version = requests.post(
-            url,
-            params=params,
-            headers=headers,
-        )
-        if new_version.status_code not in [200, 201]:
-            sys.exit("Cannot create a new version for doi '%s'. %s" % (doi, new_version.json()))
-
-        # new_version is actually the next draft. cannot edit the existing doi above
-        new_version = requests.get(
-            new_version.json()['links']['latest_draft'],
-            params=params,
-            headers=headers,
-        )
-        if new_version.status_code not in [200, 201]:
-            sys.exit("Cannot create a new version for doi '%s'. %s" % (doi, new_version.json()))
-
-        # this draft is based off of version N-1, so let's remove N-1's artifacts to make room
-        # for version N.
-        for file in new_version.json()['files']:
-            delete = requests.delete(
-                file['links']['self'],
-                params=params,
-                headers=headers,
+    def get_depositions(self):
+        """
+        Get all current depositions.
+        """
+        response = self.get("/api/deposit/depositions")
+        if response.status_code not in [200, 201]:
+            sys.exit(
+                "Cannot query depositions: %s, %s"
+                % (response.status_code, response.json())
             )
-            if delete.status_code not in [200, 204]:
-                print("could not delete file %s: %s" % (file['filename'], delete.json()))
+        return response.json()
 
-        response = new_version
-    else:
-        # Create an empty upload
+    def find_deposit(self, doi):
+        """
+        Given a doi, find the deposit, return None if no match
+        """
+        deposits = self.get_depositions()
+
+        # Look for the matching DOI
+        target_deposit = None
+        for deposit in deposits:
+            if "doi" not in deposit:
+                continue
+            print("looking at deposit %s" % deposit["doi"])
+            if deposit["conceptdoi"] == doi:
+                print("Found deposit %s! 🎉️" % doi)
+                target_deposit = deposit
+                break
+
+        return target_deposit
+
+    def new_doi(self):
+        """
+        Create a new (empty) upload for a DOI
+        """
         response = requests.post(
             "https://zenodo.org/api/deposit/depositions",
             params=params,
@@ -105,53 +112,147 @@ def upload_archive(archive, zenodo_json, version, doi=None):
                 "Trouble requesting new upload: %s, %s"
                 % (response.status_code, response.json())
             )
+        return response.json()
 
-    upload = response.json()
+    def update_doi(self, doi):
+        """
+        Given an existing DOI, update with a new archives (or pattern of files).
+        """
+        target_deposit = self.find_deposit(doi)
+        if not target_deposit:
+            sys.exit(
+                "Cannot find deposit with doi: '%s'. Are you currently editing it?"
+                % doi
+            )
 
-    # Using requests files indicates multipart/form-data
-    # Here we are uploading the new release file
-    url = "https://zenodo.org/api/deposit/depositions/%s/files" % upload["id"]
-    bucket_url = upload["links"]["bucket"]
+        # If we have an unpublished draft - continue working onit
+        if not target_deposit["submitted"]:
+            draft = target_deposit
+        else:
+            # found the existing deposit - so let's make a new version.
+            response = self.post(
+                "%s/actions/newversion" % target_deposit["links"]["self"]
+            )
+            if response.status_code not in [200, 201]:
+                sys.exit(
+                    "Cannot create a new version for doi '%s'. %s"
+                    % (doi, response.json())
+                )
+            draft = response.json()
 
-    with open(archive, "rb") as fp:
+        # this is actually the next draft. cannot edit the existing doi above
+        response = self.get(draft["links"]["latest_draft"])
+        if response.status_code not in [200, 201]:
+            sys.exit("Cannot create a draft for doi '%s'. %s" % (doi, response.json()))
+        new_version = response.json()
+
+        # this draft is based off of version N-1, so let's remove N-1's artifacts to make room
+        # for version N.
+        for file in new_version.get("files", []):
+            response = requests.delete(
+                file["links"]["self"], params=self.params, headers=self.headers
+            )
+            if response.status_code not in [200, 204]:
+                print(
+                    "could not delete file %s: %s" % (file["filename"], response.json())
+                )
+        return new_version
+
+    def upload_archive(self, upload, archive):
+        """
+        Given an upload response and archive, upload the new file!
+        """
+        # Using requests files indicates multipart/form-data
+        # Here we are uploading the new release file
+        url = "https://zenodo.org/api/deposit/depositions/%s/files" % upload["id"]
+        bucket_url = upload["links"]["bucket"]
+
+        with open(archive, "rb") as fp:
+            response = requests.put(
+                "%s/%s" % (bucket_url, os.path.basename(archive)),
+                data=fp,
+                params=self.params,
+            )
+            if response.status_code != 200:
+                sys.exit("Trouble uploading artifact %s to bucket" % archive)
+
+    def publish(self, data):
+        """
+        Given a data response from a new metadata upload, publish it.
+        """
+        publish_url = data["links"]["publish"]
+        r = requests.post(publish_url, params=self.params)
+        if r.status_code not in [200, 201, 202]:
+            sys.exit("Issue publishing record: %s, %s" % (r.status_code, r.json()))
+
+        published = r.json()
+        print("::group::Record")
+        print(json.dumps(published, indent=4))
+        print("::endgroup::")
+        for k, v in published["links"].items():
+            print("::set-output name=%s::%s" % (k, v))
+
+    def upload_metadata(self, upload, zenodo_json, version):
+        """
+        Given an upload response and zenodo json, upload new data
+
+        Note that if we don't have a zenodo.json we could use the old one.
+        """
+        metadata = upload["metadata"]
+
+        # updates from zenodo.json
+        if zenodo_json:
+            metadata.update(read_json(zenodo_json))
+        metadata["version"] = version
+        metadata["publication_date"] = str(datetime.now())
+
+        # New .zenodo.json may be missing this
+        if "upload_type" not in metadata:
+            metadata["upload_type"] = "software"
+        self.headers.update({"Content-Type": "application/json"})
+
+        # Make the deposit!
+        url = "https://zenodo.org/api/deposit/depositions/%s" % upload["id"]
         response = requests.put(
-            "%s/%s" % (bucket_url, os.path.basename(archive)),
-            data=fp,
-            params=params,
+            url,
+            data=json.dumps({"metadata": metadata}),
+            params=self.params,
+            headers=self.headers,
         )
         if response.status_code != 200:
-            sys.exit("Trouble uploading artifact %s to bucket" % archive)
+            sys.exit(
+                "Trouble uploading metadata %s, %s" % response.status_code,
+                response.json(),
+            )
+        return response.json()
+
+
+def upload_archive(archive, version, zenodo_json=None, doi=None, sandbox=False):
+    """
+    Upload an archive to an existing Zenodo "versions DOI"
+    """
+    archive = os.path.abspath(archive)
+    if not os.path.exists(archive):
+        sys.exit("Archive %s does not exist." % archive)
+
+    cli = Zenodo(sandbox=sandbox)
+
+    if doi:
+        upload = cli.update_doi(doi=doi)
+    else:
+        if not zenodo_json:
+            sys.exit("You MUST provided a .zenodo.json template to create a new DOI.")
+        upload = cli.new_doi()
+
+    # Use a glob matching pattern to upload new files (also ensures exist)
+    for path in glob(archive):
+        cli.upload_archive(upload, path)
 
     # Finally, load .zenodo.json and add version
-    metadata = read_json(zenodo_json)
-    metadata["version"] = version
-    metadata["publication_date"] = str(datetime.now())
-    if "upload_type" not in metadata:
-        metadata["upload_type"] = "software"
-    url = "https://zenodo.org/api/deposit/depositions/%s" % upload["id"]
-    headers["Content-Type"] = "application/json"
-    response = requests.put(
-        url, data=json.dumps({"metadata": metadata}), params=params, headers=headers
-    )
-    if response.status_code != 200:
-        sys.exit(
-            "Trouble uploading metadata %s, %s" % response.status_code, response.json()
-        )
+    data = cli.upload_metadata(upload, zenodo_json, version)
 
-    data = response.json()
-    publish_url = data["links"]["publish"]
-    r = requests.post(publish_url, params=params)
-    if r.status_code not in [200, 201, 202]:
-        sys.exit(
-            "Issue publishing record: %s, %s" % (response.status_code, response.json())
-        )
-
-    published = r.json()
-    print("::group::Record")
-    print(json.dumps(published, indent=4))
-    print("::endgroup::")
-    for k, v in published["links"].items():
-        print("::set-output name=%s::%s" % (k, v))
+    # Finally, publish
+    cli.publish(data)
 
 
 def get_parser():
@@ -196,9 +297,17 @@ def main():
     if not args.version:
         sys.exit("You must provide a software version to upload.")
 
-    # Prepare drafts
     if args.command == "upload":
-        upload_archive(args.archive, args.zenodo_json, args.version, doi=args.doi)
+        upload_archive(
+            archive=args.archive,
+            zenodo_json=args.zenodo_json,
+            version=args.version,
+            doi=args.doi,
+        )
+
+    # We should not get here :)
+    else:
+        sys.exit("Unrecognized command %s" % args.command)
 
 
 if __name__ == "__main__":

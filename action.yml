@@ -57,5 +57,13 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         ZENODO_TOKEN: ${{ inputs.token }}
         doi: ${{ inputs.doi }}
-      run: python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version} --doi ${doi}
+        sandbox: ${{ inputs.sandbox }}
+      run: |
+        command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --zenodo-json ${zenodo_json} --version ${version}"
+        if [[ "${doi}" != "" ]]; then
+            command="$command --doi ${doi}"
+        fi
+        printf "$command\n"
+        $command
+
       shell: bash
