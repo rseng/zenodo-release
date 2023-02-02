@@ -32,6 +32,21 @@ if not ZENODO_TOKEN:
     sys.exit("A ZENODO_TOKEN is required to be exported in the environment!")
 
 
+def set_env_and_output(name, value):
+    """helper function to echo a key/value pair to the environement file
+
+    Parameters:
+    name (str)  : the name of the environment variable
+    value (str) : the value to write to file
+    """
+    for env_var in ("GITHUB_ENV", "GITHUB_OUTPUT"):
+        environment_file_path = os.environ.get(env_var)
+        print("Writing %s=%s to %s" % (name, value, env_var))
+
+        with open(environment_file_path, "a") as environment_file:
+            environment_file.write("%s=%s\n" % (name, value))
+
+
 class Zenodo:
     """
     Zenodo client to handle shared API calls.
@@ -190,7 +205,7 @@ class Zenodo:
         print(json.dumps(published, indent=4))
         print("::endgroup::")
         for k, v in published["links"].items():
-            print("::set-output name=%s::%s" % (k, v))
+            set_env_and_output(k, v)
 
     def upload_metadata(self, upload, zenodo_json, version):
         """
