@@ -145,9 +145,7 @@ class Zenodo:
             draft = target_deposit
         else:
             # found the existing deposit - so let's make a new version.
-            response = self.post(
-                "%s/actions/newversion" % target_deposit["links"]["self"]
-            )
+            response = self.post(target_deposit["links"]["newversion"])
             if response.status_code not in [200, 201]:
                 sys.exit(
                     "Cannot create a new version for doi '%s'. %s"
@@ -188,8 +186,11 @@ class Zenodo:
                 data=fp,
                 params=self.params,
             )
-            if response.status_code != 200:
-                sys.exit("Trouble uploading artifact %s to bucket" % archive)
+            if response.status_code not in [200, 201]:
+                sys.exit(
+                    "Trouble uploading artifact %s to bucket with response code %s" %
+                    archive, response.status_code
+                )
 
     def publish(self, data):
         """
@@ -219,7 +220,7 @@ class Zenodo:
         if zenodo_json:
             metadata.update(read_json(zenodo_json))
         metadata["version"] = version
-        metadata["publication_date"] = str(datetime.now())
+        metadata["publication_date"] = str(datetime.today().strftime('%Y-%m-%d'))
 
         # New .zenodo.json may be missing this
         if "upload_type" not in metadata:
