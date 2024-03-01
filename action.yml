@@ -59,6 +59,7 @@ runs:
         doi: ${{ inputs.doi }}
       run: |
         command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --version ${version}"
+        command="$command --html-url ${{ github.event.release.html_url }}"
         if [[ "${doi}" != "" ]]; then
             command="$command --doi ${doi}"
         fi
