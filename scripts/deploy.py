@@ -171,7 +171,7 @@ class Zenodo:
                 )
         return new_version
 
-    def upload_archive(self, upload, archive, html_url):
+    def upload_archive(self, upload, archive):
         """
         Given an upload response and archive, upload the new file!
         """
