@@ -78,8 +78,12 @@ jobs:
     - name: download archive to runner
       env:
         tarball: ${{ github.event.release.tarball_url }}
+        zipball: ${{ github.event.release.zipball_url }}
+      # add the suffix to the name of the file so type is recognized when downloading from Zenodo
+      # .tar.gz for tarball and .zip for zipball
+      # Archiving the zipball will cause Zenodo to show a preview of the contents of the zipball while using tarball will not.
       run: |
-        name=$(basename ${tarball})        
+        name=$(basename ${zipball}).zip  
         curl -L $tarball > $name
         echo "archive=${name}" >> $GITHUB_ENV
 
