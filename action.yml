@@ -10,6 +10,8 @@ inputs:
   version:
     description: the release version
     required: true
+  html_url:
+    description: The HTML url to appear with the release (optional)
   zenodo_json:
     description: Path to zenodo.json to upload with metadata (must exist)
   doi:
@@ -54,17 +56,20 @@ runs:
         zenodo_json: ${{ inputs.zenodo_json }}
         archive: ${{ inputs.archive }}
         version: ${{ inputs.version }}
+        html_url: ${{ inputs.html_url }}
         ACTION_PATH: ${{ github.action_path }}
         ZENODO_TOKEN: ${{ inputs.token }}
         doi: ${{ inputs.doi }}
       run: |
         command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --version ${version}"
-        command="$command --html-url ${{ github.event.release.html_url }}"
         if [[ "${doi}" != "" ]]; then
             command="$command --doi ${doi}"
         fi
         if [[ "${zenodo_json}" != "" ]]; then
             command="$command --zenodo-json ${zenodo_json}"
+        fi
+        if [[ "${html_url}" != "" ]]; then
+            command="$command --html-url ${html_url}"
         fi
         printf "$command\n"
         $command
