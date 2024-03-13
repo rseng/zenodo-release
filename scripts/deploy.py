@@ -7,11 +7,12 @@
 
 
 import argparse
-import os
 import json
+import os
 import sys
-from glob import glob
 from datetime import datetime
+from glob import glob
+
 import requests
 
 
@@ -177,7 +178,6 @@ class Zenodo:
         """
         # Using requests files indicates multipart/form-data
         # Here we are uploading the new release file
-        url = "https://zenodo.org/api/deposit/depositions/%s/files" % upload["id"]
         bucket_url = upload["links"]["bucket"]
 
         with open(archive, "rb") as fp:
@@ -188,8 +188,8 @@ class Zenodo:
             )
             if response.status_code not in [200, 201]:
                 sys.exit(
-                    "Trouble uploading artifact %s to bucket with response code %s" %
-                    (archive, response.status_code)
+                    "Trouble uploading artifact %s to bucket with response code %s"
+                    % (archive, response.status_code)
                 )
 
     def publish(self, data):
@@ -208,7 +208,7 @@ class Zenodo:
         for k, v in published["links"].items():
             set_env_and_output(k, v)
 
-    def upload_metadata(self, upload, zenodo_json, version):
+    def upload_metadata(self, upload, zenodo_json, version, html_url=None):
         """
         Given an upload response and zenodo json, upload new data
 
@@ -220,12 +220,23 @@ class Zenodo:
         if zenodo_json:
             metadata.update(read_json(zenodo_json))
         metadata["version"] = version
-        metadata["publication_date"] = str(datetime.today().strftime('%Y-%m-%d'))
+        metadata["publication_date"] = str(datetime.today().strftime("%Y-%m-%d"))
 
         # New .zenodo.json may be missing this
         if "upload_type" not in metadata:
             metadata["upload_type"] = "software"
         self.headers.update({"Content-Type": "application/json"})
+
+        # Update the related info to use the url to the current release
+        if html_url:
+            metadata["related_identifiers"] = [
+                {
+                    "identifier": html_url,
+                    "relation": "isSupplementTo",
+                    "resource_type": "software",
+                    "scheme": "url",
+                }
+            ]
 
         # Make the deposit!
         url = "https://zenodo.org/api/deposit/depositions/%s" % upload["id"]
@@ -243,7 +254,9 @@ class Zenodo:
         return response.json()
 
 
-def upload_archive(archive, version, zenodo_json=None, doi=None, sandbox=False):
+def upload_archive(
+    archive, version, html_url=None, zenodo_json=None, doi=None, sandbox=False
+):
     """
     Upload an archive to an existing Zenodo "versions DOI"
     """
@@ -265,7 +278,7 @@ def upload_archive(archive, version, zenodo_json=None, doi=None, sandbox=False):
         cli.upload_archive(upload, path)
 
     # Finally, load .zenodo.json and add version
-    data = cli.upload_metadata(upload, zenodo_json, version)
+    data = cli.upload_metadata(upload, zenodo_json, version, html_url)
 
     # Finally, publish
     cli.publish(data)
@@ -288,6 +301,9 @@ def get_parser():
     )
     upload.add_argument("--version", help="version to upload")
     upload.add_argument("--doi", help="an existing DOI to add a new version to")
+    upload.add_argument(
+        "--html-url", dest="html_url", help="url to use for the release"
+    )
     return parser
 
 
@@ -316,6 +332,7 @@ def main():
             zenodo_json=args.zenodo_json,
             version=args.version,
             doi=args.doi,
+            html_url=args.html_url,
         )
 
     # We should not get here :)

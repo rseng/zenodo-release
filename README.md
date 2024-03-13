@@ -11,7 +11,7 @@ on release, and without needing to enable admin webhooks. To get this working yo
 
 [Here is an example](https://doi.org/10.5281/zenodo.6326822) of an "all releases" DOI created by this action, and the metadata associated:
 
-```
+```console
 doi https://doi.org/10.5281/zenodo.6326823
 conceptdoi https://doi.org/10.5281/zenodo.6326822
 conceptbadge https://zenodo.org/badge/doi/10.5281/zenodo.6326822.svg
@@ -84,7 +84,7 @@ jobs:
       # Archiving the zipball will cause Zenodo to show a preview of the contents of the zipball while using tarball will not.
       run: |
         name=$(basename ${zipball}).zip  
-        curl -L $tarball > $name
+        curl -L $zipball > $name
         echo "archive=${name}" >> $GITHUB_ENV
 
     - name: Run Zenodo Deploy
@@ -93,6 +93,7 @@ jobs:
         token: ${{ secrets.ZENODO_TOKEN }}
         version: ${{ github.event.release.tag_name }}
         zenodo_json: .zenodo.json   # optional
+        html_url: ${{ github.event.release.html_url }} # optional to include link to the GitHub release
         archive: ${{ env.archive }}
 
         # Optional DOI for all versions. Leaving this blank (the default) will create
