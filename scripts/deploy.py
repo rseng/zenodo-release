@@ -208,7 +208,7 @@ class Zenodo:
         for k, v in published["links"].items():
             set_env_and_output(k, v)
 
-    def upload_metadata(self, upload, zenodo_json, version, html_url=None):
+    def upload_metadata(self, upload, zenodo_json, version, html_url=None, title=None, description=None):
         """
         Given an upload response and zenodo json, upload new data
 
@@ -229,14 +229,21 @@ class Zenodo:
 
         # Update the related info to use the url to the current release
         if html_url:
-            metadata["related_identifiers"] = [
+            metadata.setdefault("related_identifiers", [])
+            metadata["related_identifiers"].append(
                 {
                     "identifier": html_url,
                     "relation": "isSupplementTo",
                     "resource_type": "software",
                     "scheme": "url",
                 }
-            ]
+            )
+
+        if title is not None:
+            metadata["title"] = title
+
+        if description is not None:
+            metadata["description"] = description
 
         # Make the deposit!
         url = "https://zenodo.org/api/deposit/depositions/%s" % upload["id"]
@@ -255,7 +262,7 @@ class Zenodo:
 
 
 def upload_archive(
-    archive, version, html_url=None, zenodo_json=None, doi=None, sandbox=False
+    archive, version, html_url=None, zenodo_json=None, doi=None, sandbox=False, title=None, description=None,
 ):
     """
     Upload an archive to an existing Zenodo "versions DOI"
@@ -278,7 +285,7 @@ def upload_archive(
         cli.upload_archive(upload, path)
 
     # Finally, load .zenodo.json and add version
-    data = cli.upload_metadata(upload, zenodo_json, version, html_url)
+    data = cli.upload_metadata(upload, zenodo_json, version, html_url, title=title, description=description)
 
     # Finally, publish
     cli.publish(data)
@@ -300,6 +307,8 @@ def get_parser():
         help="path to .zenodo.json (defaults to .zenodo.json)",
     )
     upload.add_argument("--version", help="version to upload")
+    upload.add_argument("--title", help="Title to override in upload")
+    upload.add_argument("--description", help="Description to override in upload (allows HTML)")
     upload.add_argument("--doi", help="an existing DOI to add a new version to")
     upload.add_argument(
         "--html-url", dest="html_url", help="url to use for the release"
@@ -333,6 +342,8 @@ def main():
             version=args.version,
             doi=args.doi,
             html_url=args.html_url,
+            title=args.title,
+            description=args.description,
         )
 
     # We should not get here :)
