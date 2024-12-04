@@ -16,6 +16,10 @@ inputs:
     description: Path to zenodo.json to upload with metadata (must exist)
   doi:
     descripton: The DOI to create a new version from
+  title:
+    description: zenodo title (optional)
+  description:
+    description: zenodo description (optional)
 
 outputs:
   badge:

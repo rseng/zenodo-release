@@ -95,6 +95,8 @@ jobs:
         zenodo_json: .zenodo.json   # optional
         html_url: ${{ github.event.release.html_url }} # optional to include link to the GitHub release
         archive: ${{ env.archive }}
+        title: ${{ github.repository }}:${{ github.event.release.tag_name }}  # optional title to override
+        description: <h1>${{ github.event.release.tag_name }}</h1>  # optional release description (allows HTML)
 
         # Optional DOI for all versions. Leaving this blank (the default) will create
         # a new DOI on every release. Use a DOI that represents all versions will
@@ -207,4 +209,3 @@ export ZENODO_TOKEN=xxxxxxxxxxxxxxxxxxxx
                                   # archive    # multi-version DOI                 # new version
 $ python scripts/deploy.py upload 0.0.0.tar.gz --doi 10.5281/zenodo.6326822        --version 0.0.0
 ```
-
