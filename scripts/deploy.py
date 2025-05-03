@@ -12,8 +12,13 @@ import os
 import sys
 from datetime import datetime
 from glob import glob
+from typing import TYPE_CHECKING
 
 import requests
+
+if TYPE_CHECKING:
+    import io
+    from typing import Any, Dict, Optional
 
 
 def read_file(filename):
@@ -208,7 +213,16 @@ class Zenodo:
         for k, v in published["links"].items():
             set_env_and_output(k, v)
 
-    def upload_metadata(self, upload, zenodo_json, version, html_url=None, title=None, description=None):
+    def upload_metadata(
+        self,
+        upload,                 # type: Dict[str, Any]
+        zenodo_json,            # type: str
+        version,                # type: str
+        html_url=None,          # type: Optional[str]
+        title=None,             # type: Optional[str]
+        description=None,       # type: Optional[str]
+        description_file=None,  # type: Optional[io.TextIOBase]
+    ):                          # type: (...) -> Dict[str, Any]
         """
         Given an upload response and zenodo json, upload new data
 
@@ -244,6 +258,8 @@ class Zenodo:
 
         if description is not None:
             metadata["description"] = description
+        elif description_file:
+            metadata["description"] = description_file.read()
 
         # Make the deposit!
         url = "https://zenodo.org/api/deposit/depositions/%s" % upload["id"]
@@ -261,7 +277,15 @@ class Zenodo:
 
 
 def upload_archive(
-    archive, version, html_url=None, zenodo_json=None, doi=None, sandbox=False, title=None, description=None,
+    archive,
+    version,
+    html_url=None,
+    zenodo_json=None,
+    doi=None,
+    sandbox=False,
+    title=None,
+    description=None,
+    description_file=None,
 ):
     """
     Upload an archive to an existing Zenodo "versions DOI"
@@ -284,7 +308,15 @@ def upload_archive(
         cli.upload_archive(upload, path)
 
     # Finally, load .zenodo.json and add version
-    data = cli.upload_metadata(upload, zenodo_json, version, html_url, title=title, description=description)
+    data = cli.upload_metadata(
+        upload,
+        zenodo_json,
+        version,
+        html_url,
+        title=title,
+        description=description,
+        description_file=description_file,
+    )
 
     # Finally, publish
     cli.publish(data)
@@ -307,7 +339,16 @@ def get_parser():
     )
     upload.add_argument("--version", help="version to upload")
     upload.add_argument("--title", help="Title to override in upload")
-    upload.add_argument("--description", help="Description to override in upload (allows HTML)")
+    upload_desc = upload.add_mutually_exclusive_group()
+    upload_desc.add_argument(
+        "--description",
+        help="Description to override in upload as plain text (allows HTML, but be careful about escaping)",
+    )
+    upload_desc.add_argument(
+        "--description-file",
+        help="Description to override in upload from a file.",
+        type=argparse.FileType("r", encoding="utf-8"),
+    )
     upload.add_argument("--doi", help="an existing DOI to add a new version to")
     upload.add_argument(
         "--html-url", dest="html_url", help="url to use for the release"
@@ -343,6 +384,7 @@ def main():
             html_url=args.html_url,
             title=args.title,
             description=args.description,
+            description_file=args.description_file,
         )
 
     # We should not get here :)

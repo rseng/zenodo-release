@@ -19,7 +19,9 @@ inputs:
   title:
     description: zenodo title (optional)
   description:
-    description: zenodo description (optional)
+    description: zenodo description as plain text (optional)
+  description_file:
+    description: zenodo description from a file (optional)
 
 outputs:
   badge:
@@ -64,18 +66,29 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         ZENODO_TOKEN: ${{ inputs.token }}
         doi: ${{ inputs.doi }}
+        title: ${{ inputs.title }}
+        description: ${{ inputs.description }}
+        description_file: ${{ inputs.description_file }}
       run: |
-        command="python ${{ github.action_path }}/scripts/deploy.py upload ${archive} --version ${version}"
-        if [[ "${doi}" != "" ]]; then
-            command="$command --doi ${doi}"
+        command=("python" "${{ github.action_path }}/scripts/deploy.py" "upload" "${archive}" "--version" "${version}")
+        if [[ -n "${doi}" ]]; then
+            command+=("--doi" "${doi}")
         fi
-        if [[ "${zenodo_json}" != "" ]]; then
-            command="$command --zenodo-json ${zenodo_json}"
+        if [[ -n "${title}" ]]; then
+            command+=("--title" "${title}")
         fi
-        if [[ "${html_url}" != "" ]]; then
-            command="$command --html-url ${html_url}"
+        if [[ -n "${description}" ]]; then
+            command+=("--description" "${description}")
+        elif [[ -n "${description_file}" ]]; then
+            command+=("--description-file" "${description_file}")
         fi
-        printf "$command\n"
-        $command
+        if [[ -n "${zenodo_json}" ]]; then
+            command+=("--zenodo-json" "${zenodo_json}")
+        fi
+        if [[ -n "${html_url}" ]]; then
+            command+=("--html-url" "${html_url}")
+        fi
+        printf "%s " "${command[@]}"
+        "${command[@]}"
 
       shell: bash
