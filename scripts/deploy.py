@@ -111,7 +111,7 @@ class Zenodo:
             if "doi" not in deposit:
                 continue
             print("looking at deposit %s" % deposit["doi"])
-            if deposit["conceptdoi"] == doi:
+            if deposit.get("conceptdoi") == doi:
                 print("Found deposit %s! 🎉️" % doi)
                 target_deposit = deposit
                 break
